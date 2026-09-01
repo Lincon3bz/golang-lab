@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
-func processo() (int, string) {
-	temp := rand.Intn(9) + 2
-	texto := fmt.Sprintf("Esse processo levou %d segundos", temp)
+func processo(min, max int) (int, string) {
+	temp := rand.Intn(max-min+1) + min
+	time.Sleep(time.Duration(temp) * time.Second)
+	texto := fmt.Sprintf("levou %d segundos", temp)
 	return temp, texto
 
 }
@@ -15,23 +17,23 @@ func processo() (int, string) {
 func main() {
 
 	TempoTotal := 0
-	informado := fmt.Scanln("informe um número")
-	fmt.Println(informado)
-	processo1, texto := processo()
-	fmt.Println(texto)
-	TempoTotal += processo1
+	var qtd_processos int
+	fmt.Print("informe uma quantidade de processos: ")
+	fmt.Scanln(&qtd_processos)
 
-	processo2, texto := processo()
-	fmt.Println(texto)
-	TempoTotal += processo2
+	var min int
+	fmt.Print("informe tempo mínimo de cada processo em segundos: ")
+	fmt.Scanln(&min)
 
-	processo3, texto := processo()
-	fmt.Println(texto)
-	TempoTotal += processo3
+	var max int
+	fmt.Print("informe tempo máximo de cada processo em segundos: ")
+	fmt.Scanln(&max)
 
-	processo4, texto := processo()
-	fmt.Println(texto)
-	TempoTotal += processo4
+	for i := 0; i < qtd_processos; i++ {
+		processo, texto := processo(min, max)
+		fmt.Println("processo #", i+1, texto)
+		TempoTotal += processo
+	}
 
 	fmt.Println("tempo total:", TempoTotal, "segundos")
 
