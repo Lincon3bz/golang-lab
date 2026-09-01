@@ -29,10 +29,12 @@ func main() {
 	fmt.Print("informe tempo máximo de cada processo em segundos: ")
 	fmt.Scanln(&max)
 
-	for i := 0; i < qtd_processos; i++ {
+	i := 0
+	for i < qtd_processos {
 		processo, texto := processo(min, max)
 		fmt.Println("processo #", i+1, texto)
 		TempoTotal += processo
+		i++
 	}
 
 	fmt.Println("tempo total:", TempoTotal, "segundos")
