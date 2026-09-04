@@ -11,11 +11,11 @@ func processo(min, max int) (int, string) {
 	time.Sleep(time.Duration(temp) * time.Second)
 	texto := fmt.Sprintf("levou %d segundos", temp)
 	return temp, texto
-
 }
 
+var t0 = time.Now()
+
 func main() {
-	t0 := time.Now()
 	TempoProcessos := 0
 	var qtd_processos int
 	fmt.Print("informe uma quantidade de processos: ")
@@ -34,8 +34,10 @@ func main() {
 		fmt.Print("informe tempo máximo de cada processo em segundos: ")
 		fmt.Scanln(&max)
 	}
+
 	fmt.Println()
 	i := 0
+	t0 := time.Now()
 	for i < qtd_processos {
 		processo, texto := processo(min, max)
 		fmt.Println("processo #", i+1, texto)
@@ -45,12 +47,18 @@ func main() {
 
 	duracao := time.Since(t0).Seconds()
 	fmt.Println("\nProcessos:", TempoProcessos, "segundos")
-	fmt.Printf("Duração: %.0f segundos", duracao)
-	if duracao > float64(TempoProcessos) {
-		fmt.Printf("\nTempo do processo mais %.0f pra rodar tudo", duracao-float64(TempoProcessos))
-	} else {
-		fmt.Println("Outro cenário de economia do tempo")
-	}
-	fmt.Println("\n ")
+	fmt.Printf("Duração: %.0f segundos\n", duracao)
+	delta := duracao - float64(TempoProcessos)
+	//fmt.Printf("dif em segundos: %.2f", delta)
 
+	switch {
+	case delta < -0.9:
+		fmt.Printf("economizamos %.0f segundos", delta)
+	case delta > 0.9:
+		fmt.Printf("Execução levou %.0f segundos a mais que o tempo dos processos ", delta)
+	default:
+		fmt.Println("empate")
+	}
+
+	fmt.Println("\n ")
 }
