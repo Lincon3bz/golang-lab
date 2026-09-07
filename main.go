@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,8 @@ func processo(min, max int) (int, string) {
 }
 
 var t0 = time.Now()
+var wg sync.WaitGroup
+var mu sync.Mutex
 
 func main() {
 	TempoProcessos := 0
@@ -36,15 +39,24 @@ func main() {
 	}
 
 	fmt.Println()
-	i := 0
+
 	t0 := time.Now()
-	for i < qtd_processos {
-		processo, texto := processo(min, max)
-		fmt.Println("processo #", i+1, texto)
-		TempoProcessos += processo
-		i++
+	wg.Add(qtd_processos)
+	for i := 0; i < qtd_processos; i++ {
+		go func(i int) {
+			defer wg.Done()
+			processo, texto := processo(min, max)
+			mu.Lock()
+			fmt.Println("processo #", i+1, texto)
+			fmt.Print(TempoProcessos, "+", processo, "=")
+			TempoProcessos += processo
+			fmt.Print(TempoProcessos, "\n")
+			mu.Unlock()
+
+		}(i)
 	}
 
+	wg.Wait()
 	duracao := time.Since(t0).Seconds()
 	fmt.Println("\nProcessos:", TempoProcessos, "segundos")
 	fmt.Printf("Duração: %.0f segundos\n", duracao)
@@ -53,7 +65,7 @@ func main() {
 
 	switch {
 	case delta < -0.9:
-		fmt.Printf("economizamos %.0f segundos", delta)
+		fmt.Printf("economizamos %.0f segundos", -delta)
 	case delta > 0.9:
 		fmt.Printf("Execução levou %.0f segundos a mais que o tempo dos processos ", delta)
 	default:
