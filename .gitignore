@@ -1,0 +1,23 @@
+# Executáveis
+*.exe
+
+# Arquivos temporários
+*.tmp
+*.log
+
+# Configurações locais
+.env
+
+# Pasta de build
+bin/
+
+# Configurações do VS Code
+.vscode/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Banco de dados
+*.duckdb
+*.csv

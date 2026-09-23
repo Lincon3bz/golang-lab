@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
+
+	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 func processo(min, max int) (int, string) {
@@ -19,6 +23,12 @@ var wg sync.WaitGroup //organiza pra esperar todoas as concorrencias terminarem
 var mu sync.Mutex     //Mutual exclusion (evita "bifurcar" variáveis gerando erro na totalização)
 
 func main() {
+	db, err := sql.Open("duckdb", "dados.duckdb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	fmt.Println("Conectou ao DuckDB!")
 	TempoProcessos := 0
 	var qtd_processos int
 	fmt.Print("informe uma quantidade de processos: ")
