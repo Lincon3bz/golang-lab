@@ -15,8 +15,8 @@ func processo(min, max int) (int, string) {
 }
 
 var t0 = time.Now()
-var wg sync.WaitGroup
-var mu sync.Mutex
+var wg sync.WaitGroup //organiza pra esperar todoas as concorrencias terminarem
+var mu sync.Mutex     //Mutual exclusion (evita "bifurcar" variáveis gerando erro na totalização)
 
 func main() {
 	TempoProcessos := 0
@@ -37,21 +37,32 @@ func main() {
 		fmt.Print("informe tempo máximo de cada processo em segundos: ")
 		fmt.Scanln(&max)
 	}
+	var limite_simultaneos int
+	fmt.Print("informe limite de proocessos simultâneos: ")
+	fmt.Scanln(&limite_simultaneos)
+	for limite_simultaneos < 1 {
+		fmt.Print("limite de proocessos simultâneos deve ser maior que zero: ")
+		fmt.Scanln(&limite_simultaneos)
+	}
+	limite := make(chan struct{}, limite_simultaneos)
 
 	fmt.Println()
 
 	t0 := time.Now()
 	wg.Add(qtd_processos)
 	for i := 0; i < qtd_processos; i++ {
+
 		go func(i int) {
 			defer wg.Done()
+			limite <- struct{}{}
 			processo, texto := processo(min, max)
 			mu.Lock()
 			fmt.Println("processo #", i+1, texto)
 			fmt.Print(TempoProcessos, "+", processo, "=")
 			TempoProcessos += processo
-			fmt.Print(TempoProcessos, "\n")
+			fmt.Print(TempoProcessos, " Timestamp:", time.Since(t0).Seconds(), "\n")
 			mu.Unlock()
+			<-limite
 
 		}(i)
 	}
