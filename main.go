@@ -34,11 +34,6 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(`DELETE FROM processos`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS processos(
 			db_id INTEGER,
@@ -48,6 +43,11 @@ func main() {
 			db_tempo_decorrido DOUBLE,
 		)
 	`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(`DELETE FROM processos`)
 	if err != nil {
 		log.Fatal(err)
 	}
