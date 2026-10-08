@@ -11,14 +11,19 @@ import (
 	_ "github.com/duckdb/duckdb-go/v2"
 )
 
-func processo(min, max int) (int, string) {
+func processo(min, max int) int {
 	temp := rand.Intn(max-min+1) + min
 	time.Sleep(time.Duration(temp) * time.Second)
-	texto := fmt.Sprintf("levou %d segundos", temp)
-	return temp, texto
+	return temp
 }
 
-var t0 = time.Now()
+type Resultado struct {
+	ID      int
+	Inicio  int
+	Fim     int
+	Duracao float64
+}
+
 var wg sync.WaitGroup //organiza pra esperar todoas as concorrencias terminarem
 var mu sync.Mutex     //Mutual exclusion (evita "bifurcar" variáveis gerando erro na totalização)
 
@@ -28,7 +33,26 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	fmt.Println("Conectou ao DuckDB!")
+
+	_, err = db.Exec(`DELETE FROM processos`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS processos(
+			db_id INTEGER,
+			db_inicio INTEGER,
+			db_fim INTEGER,
+			db_duracao BIGINT,
+			db_tempo_decorrido DOUBLE,
+		)
+	`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Conectou ao DuckDB e criou banco de dados!")
 	TempoProcessos := 0
 	var qtd_processos int
 	fmt.Print("informe uma quantidade de processos: ")
@@ -65,12 +89,38 @@ func main() {
 		go func(i int) {
 			defer wg.Done()
 			limite <- struct{}{}
-			processo, texto := processo(min, max)
+			TempoProcesso := processo(min, max)
 			mu.Lock()
-			fmt.Println("processo #", i+1, texto)
-			fmt.Print(TempoProcessos, "+", processo, "=")
-			TempoProcessos += processo
-			fmt.Print(TempoProcessos, " Timestamp:", time.Since(t0).Seconds(), "\n")
+			TempoProcessos += TempoProcesso
+			resultado := Resultado{
+				ID:      i + 1,
+				Inicio:  TempoProcessos - TempoProcesso,
+				Duracao: float64(TempoProcesso),
+				Fim:     TempoProcessos,
+			}
+			TempoDecorrido := time.Since(t0).Seconds()
+			_, err := db.Exec(`
+				INSERT INTO processos(
+				db_id,
+				db_inicio,
+				db_fim,
+				db_duracao,
+				db_tempo_decorrido)
+				VALUES(?,?,?,?,?)
+				`,
+				resultado.ID,
+				resultado.Inicio,
+				resultado.Fim,
+				int64(resultado.Duracao),
+				TempoDecorrido,
+			)
+			if err != nil {
+				fmt.Print("_ - * E R R O  N A L I N H A", resultado.ID, " * - _")
+				log.Fatal(err)
+			}
+
+			fmt.Println("processo #", resultado.ID, ":", resultado.Inicio, "+", resultado.Duracao, "=", resultado.Fim)
+			fmt.Println(" Timestamp:", TempoDecorrido)
 			mu.Unlock()
 			<-limite
 
@@ -82,7 +132,6 @@ func main() {
 	fmt.Println("\nProcessos:", TempoProcessos, "segundos")
 	fmt.Printf("Duração: %.0f segundos\n", duracao)
 	delta := duracao - float64(TempoProcessos)
-	//fmt.Printf("dif em segundos: %.2f", delta)
 
 	switch {
 	case delta < -0.9:
@@ -92,6 +141,31 @@ func main() {
 	default:
 		fmt.Println("empate")
 	}
+
+	_, err = db.Exec(`
+	COPY (SELECT
+            db_id,
+            db_inicio,
+            db_fim,
+            db_duracao,
+            REPLACE(
+                CAST(ROUND(db_tempo_decorrido, 3) AS VARCHAR),
+                '.',
+                ','
+            ) AS db_tempo_decorrido
+        FROM processos
+    )
+	TO 'processos.csv'
+	(	
+		HEADER,
+	 	DELIMITER ';'
+		)
+	`)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("\nCSV criado com sucesso!")
 
 	fmt.Println("\n ")
 }
