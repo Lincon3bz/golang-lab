@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Go API</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 40px 16px;
+            color: #1e293b;
+        }
+
+        .card {
+            max-width: 380px;
+            margin: auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px #0001;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin: 18px 0 6px;
+        }
+
+        input {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #resultado {
+            margin-top: 22px;
+            font-size: 20px;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        #status {
+            font-size: 13px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Calculadora Go</h1>
+        <p>Envie dois números para sua API.</p>
+
+        <p id="status">Verificando a API...</p>
+
+        <form id="formSoma">
+            <label for="a">Primeiro número</label>
+            <input id="a" type="number" step="1" required value="10">
+
+            <label for="b">Segundo número</label>
+            <input id="b" type="number" step="1" required value="20">
+
+            <button type="submit">Calcular</button>
+        </form>
+
+        <div id="resultado" aria-live="polite"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById("formSoma");
+        const resultado = document.getElementById("resultado");
+        const status = document.getElementById("status");
+
+        async function verificarAPI() {
+            try {
+                const resposta = await fetch("/api/status");
+
+                if (!resposta.ok) {
+                    throw new Error("Erro HTTP");
+                }
+
+                const dados = await resposta.json();
+                status.textContent = "API: " + dados.status;
+            } catch (erro) {
+                status.textContent = "Não foi possível conectar à API.";
+            }
+        }
+
+        form.addEventListener("submit", async function(evento) {
+            evento.preventDefault();
+
+            const a = Number(document.getElementById("a").value);
+            const b = Number(document.getElementById("b").value);
+
+            resultado.textContent = "Calculando...";
+
+            try {
+                const resposta = await fetch("/api/soma", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ a: a, b: b })
+                });
+
+                if (!resposta.ok) {
+                    throw new Error("Erro HTTP " + resposta.status);
+                }
+
+                const dados = await resposta.json();
+                resultado.textContent = "Resultado: " + dados.resultado;
+
+            } catch (erro) {
+                resultado.textContent = "Erro ao chamar a API.";
+            }
+        });
+
+        verificarAPI();
+    </script>
+</body>
+</html>
